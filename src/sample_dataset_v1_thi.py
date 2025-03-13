@@ -5,11 +5,11 @@ from tqdm import tqdm
 
 def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
     """
-    Cria um subconjunto do dataset com base nas queries selecionadas e na porcentagem de queries a serem amostradas.
+    Cria um subconjunto do dataset com base na porcentagem de queries a serem amostradas e na quantidade de documentos não relevantes a serem amostrados para cada query relevante.
 
     dataset_name: nome do dataset a ser carregado
     sample_percentage: porcentagem de queries a serem amostradas
-    X: número de documentos não relevantes a serem amostrados para cada query relevante
+    X: número de documentos não relevantes a serem amostrados para cada query
     seed: semente para o gerador de números aleatórios
     verbose: se True, imprime informações adicionais durante o processo
 
@@ -68,7 +68,7 @@ def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
     total_random_needed = X * n_queries_sub
 
     # --- 3) 1 passada sobre docs_iter() usando reservoir sampling ---
-    subset_docs = {}  # Aqui vão doc_id -> doc_obj relevantes + amostrados
+    subset_docs = {}  # Aqui vão doc_id -> doc_obj relevantes + amostrados no reservoir
     reservoir = []    # Armazena temporariamente os documentos não relevantes escolhidos
     num_docs_vistos_nao_rel = 0
 
@@ -86,6 +86,7 @@ def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
                 reservoir.append(doc)
             else:
                 # Já temos o reservatório cheio, decide se substitui algum
+                # Importante para evitar viés de amostragem
                 j = random.randint(0, num_docs_vistos_nao_rel)
                 if j < total_random_needed:
                     reservoir[j] = doc
