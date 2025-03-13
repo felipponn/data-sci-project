@@ -91,10 +91,9 @@ def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
                     reservoir[j] = doc
             num_docs_vistos_nao_rel += 1
 
-    # Final do loop: "reservoir" contém os docs não relevantes amostrados
-    # Agora, junte-os ao subset
+    # Por fim, adiciona os docs não relevantes ao subset
     for doc in reservoir:
-        subset_docs[doc.doc_id] = doc
+        subset_docs[doc.doc_id] = doc 
     
     if verbose:
         print(f"Total de Queries no subset: {n_queries_sub}")
