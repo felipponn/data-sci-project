@@ -152,3 +152,16 @@ if __name__ == '__main__':
     print("Queries:", len(dataset_loaded['queries']))
     print("Docs:", len(dataset_loaded['docs']))
     print("Qrels:", len(dataset_loaded['qrels']))
+    
+    # exemplo de uso do dataset
+    for query in dataset_loaded['queries'].values():
+        print(query)
+        break
+
+    for doc in dataset_loaded['docs'].values():
+        print(doc)
+        break
+
+    for qrel in dataset_loaded['qrels']:
+        print(qrel)
+        break
