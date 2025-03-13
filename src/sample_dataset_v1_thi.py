@@ -65,7 +65,8 @@ def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
         print(f"Doc IDs relevantes: {len(relevant_doc_ids)}")
 
     # Total de documentos não relevantes que queremos
-    total_random_needed = X * n_queries_sub
+    # Aqui será X vezes o número de queries relevantes
+    total_random_needed = X * len(relevant_doc_ids)
 
     # --- 3) 1 passada sobre docs_iter() usando reservoir sampling ---
     subset_docs = {}  # Aqui vão doc_id -> doc_obj relevantes + amostrados no reservoir
@@ -137,8 +138,8 @@ def load_dataset(input_file):
 # Exemplo de uso
 if __name__ == '__main__':
     dataset_name = "msmarco-passage-v2/train"
-    sample_percentage = 0.05
-    X = 10  
+    sample_percentage = 0.1
+    X = 100  
     output_file = "../data/subset_msmarco_train.pkl"
     seed = 42
     verbose = True
