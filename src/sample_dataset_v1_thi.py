@@ -79,7 +79,7 @@ def create_subset(
     #    - all_doc_ids: lista (ou set) de todos os doc_ids
     doc_dict = {}
     all_doc_ids = []
-    for doc in tqdm(dataset.docs_iter(), desc="Lendo todos os Docs (1a e única vez)"):
+    for doc in tqdm(dataset.docs_iter(), desc="Lendo todos os Docs"):
         doc_dict[doc.doc_id] = doc
         all_doc_ids.append(doc.doc_id)
 
