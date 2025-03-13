@@ -4,6 +4,20 @@ import pickle
 from tqdm import tqdm
 
 def create_subset(dataset_name, sample_percentage, X, seed=None, verbose=False):
+    """
+    Cria um subconjunto do dataset com base nas queries selecionadas e na porcentagem de queries a serem amostradas.
+
+    dataset_name: nome do dataset a ser carregado
+    sample_percentage: porcentagem de queries a serem amostradas
+    X: número de documentos não relevantes a serem amostrados para cada query relevante
+    seed: semente para o gerador de números aleatórios
+    verbose: se True, imprime informações adicionais durante o processo
+
+    Retorna:
+    subset_queries_dict: dicionário com as queries selecionadas
+    subset_docs: dicionário com os documentos selecionados
+    subset_qrels: lista com os qrels selecionados
+    """
     if seed is not None:
         random.seed(seed)
 
@@ -124,7 +138,7 @@ def load_dataset(input_file):
 if __name__ == '__main__':
     dataset_name = "msmarco-passage-v2/train"
     sample_percentage = 0.05
-    X = 10  # Número de documentos aleatórios (falsos) a serem adicionados, para todo o conjunto
+    X = 10  
     output_file = "../data/subset_msmarco_train.pkl"
     seed = 42
     verbose = True
