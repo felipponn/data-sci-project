@@ -31,4 +31,3 @@ def loader(num_queries):
 
     return data
 
-
