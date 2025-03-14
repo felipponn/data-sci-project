@@ -138,31 +138,14 @@ def load_dataset(input_file):
 # Exemplo de uso
 if __name__ == '__main__':
     dataset_name = "msmarco-passage-v2/train"
-    sample_percentage = 0.1
-    X = 100  
-    output_file = "../data/subset_msmarco_train.pkl"
     seed = 42
-    verbose = True
+    verbose = False
+    sample_percentage = [0.1, 0.05] 
+    n_docs_irrelevant = [ 500, 1000, 25, 100]
 
-    # Cria e salva o dataset
-    create_and_save_dataset(dataset_name, sample_percentage, X, output_file, seed, verbose)
-
-    # Lê o dataset salvo
-    dataset_loaded = load_dataset(output_file)
-    print("\nDataset carregado:")
-    print("Queries:", len(dataset_loaded['queries']))
-    print("Docs:", len(dataset_loaded['docs']))
-    print("Qrels:", len(dataset_loaded['qrels']))
-    
-    # exemplo de uso do dataset
-    for query in dataset_loaded['queries'].values():
-        print(query)
-        break
-
-    for doc in dataset_loaded['docs'].values():
-        print(doc)
-        break
-
-    for qrel in dataset_loaded['qrels']:
-        print(qrel)
-        break
+    for sample_percentage in sample_percentage:
+        for n_docs_X in n_docs_irrelevant:
+            print(f"Criando dataset com sample_percentage={sample_percentage} e n_docs_X={n_docs_X}")
+            output_file = f"../data/subset_msmarco_train_{sample_percentage}_{n_docs_X}.pkl"
+            create_and_save_dataset(dataset_name, sample_percentage, n_docs_X, output_file, seed, verbose)
+            
