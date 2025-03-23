@@ -44,17 +44,6 @@ def random_search(docs_dict, queries_dict, K=10):
     
     return top_k_results, execution_time
 
-import time
-import numpy as np
-from tqdm import tqdm
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-def dict_to_list(d):
-    """Converte dicionário {id: texto} em duas listas paralelas [ids], [textos]."""
-    ids = list(d.keys())
-    textos = list(d.values())
-    return ids, textos
-
 def tfidf_search(docs_dict, queries_dict, K=10):
     """
     Realiza busca usando TF-IDF e similaridade de cosseno em lote, retornando os Top K documentos.
