@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from rank_bm25 import BM25Okapi
 
-
 def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
 
