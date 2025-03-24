@@ -2,6 +2,7 @@ from transformers import BertTokenizer, BertModel
 from tqdm import tqdm
 import time
 import torch
+import numpy as np
 
 def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
@@ -38,10 +39,13 @@ def bert(docs_dict, queries_dict, K=10):
 
         inputs = tokenizer(qtext, doc_texts, return_tensors='pt', padding=True, truncation=True)
         outputs = model(**inputs)
+
         relevance_scores = torch.nn.functional.sigmoid(outputs.last_hidden_state[:, 0, :])
         relevance_scores = relevance_scores.detach().numpy().flatten()
-        top_k_results[qid] = [(doc_id, score) for doc_id, score in zip(doc_ids, relevance_scores)]
 
+        top_k_indices = np.argsort(relevance_scores)[::-1][:K]
+        top_k_results[qid] = [(doc_ids[idx], relevance_scores[idx]) for idx in top_k_indices]
+    
     execution_time = time.time() - start_time
     
     return top_k_results, execution_time
