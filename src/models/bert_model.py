@@ -8,7 +8,18 @@ def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
 
 def encode_texts(texts, tokenizer, model, device, batch_size=32, desc="Encoding"):
-    """Encodes a list of texts into embeddings using BERT in batches with tqdm progress bar."""
+    """Encoda textos em embeddings usando BERT.
+    Args:
+        texts (list): Lista de textos a serem codificados.
+        tokenizer: Tokenizer do modelo BERT.
+        model: Modelo BERT.
+        device: Dispositivo (CPU ou GPU) para executar o modelo.
+        batch_size (int): Tamanho do lote para processamento em lote.
+        desc (str): Descrição para a barra de progresso.
+        
+    Returns:
+        torch.Tensor: Tensor contendo os embeddings dos textos.
+    """
     all_embeddings = []
     
     for i in tqdm(range(0, len(texts), batch_size), desc=desc, unit="batch"):
@@ -26,19 +37,20 @@ def encode_texts(texts, tokenizer, model, device, batch_size=32, desc="Encoding"
 
 def bert(docs_dict, queries_dict, tokenizer, model, K=10, batch_size=32):
     """
-    Performs document retrieval using BERT embeddings and cosine similarity.
+    Realiza a busca de documentos usando o modelo BERT.
 
     Args:
-        docs_dict: {doc_id: doc_text}
-        queries_dict: {query_id: query_text}
-        tokenizer: Preloaded BERT tokenizer
-        model: Preloaded BERT model
-        K: Number of top documents to return per query (default=10)
-        batch_size: Number of documents to encode per batch (default=32)
+        docs_dict (dict): Dicionário de documentos com IDs e textos.
+        queries_dict (dict): Dicionário de consultas com IDs e textos.
+        tokenizer: Tokenizer do modelo BERT.
+        model: Modelo BERT.
+        K (int): Número de documentos a serem recuperados para cada consulta.
+        batch_size (int): Tamanho do lote para processamento em lote.
 
     Returns:
-        dict: {query_id: [(doc_id, score), ...]}
-        float: Execution time in seconds
+        dict: Dicionário com os IDs dos documentos recuperados e suas pontuações de similaridade.
+        float: Tempo total de execução.
+
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -48,7 +60,7 @@ def bert(docs_dict, queries_dict, tokenizer, model, K=10, batch_size=32):
     
     start_time = time.time()
 
-    # Encode documents in batches
+    # Encode all documents in batches
     doc_embeddings = encode_texts(doc_texts, tokenizer, model, device, batch_size, desc="Encoding documents")
 
     # Encode all queries in batches
@@ -68,9 +80,7 @@ def bert(docs_dict, queries_dict, tokenizer, model, K=10, batch_size=32):
     execution_time = time.time() - start_time
     return top_k_results, execution_time
 
-# Load model and tokenizer once
+# Exemplo de uso:
 # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # model = BertModel.from_pretrained('bert-base-uncased')
-
-# Example call
 # results, exec_time = bert(docs_dict, queries_dict, tokenizer, model, batch_size=32)
