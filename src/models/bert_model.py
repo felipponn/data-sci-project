@@ -112,8 +112,8 @@ def bert_search(docs_dict, queries_dict, K=10):
     model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
     # Computar embeddings em lote (mais eficiente)
-    doc_embeddings = model.encode(doc_texts, convert_to_tensor=True)
-    query_embeddings = model.encode(query_texts, convert_to_tensor=True)
+    doc_embeddings = model.encode(doc_texts, convert_to_tensor=True, show_progress_bar=True)
+    query_embeddings = model.encode(query_texts, convert_to_tensor=True, show_progress_bar=True)
 
     # Dicionário para armazenar resultados
     results = {}
