@@ -65,7 +65,7 @@ def primary_stage(docs_dict, queries_dict, K=1000):
 
 # Usando modelo de precisão consideramos apenas os documentos que estão entre os K mais relevantes para cada consulta
 # e retornamos os ids dos documentos mais relevantes para cada consulta
-def secondary_stage(docs_dict, queries_dict, top_k_results, set_docs, K=10):
+def secondary_stage(docs_dict, queries_dict, top_k_results, set_docs, K=10, load_encodings=True):
     """
     Realiza a busca de documentos usando um modelo mais complexo (BERT ou similar).
 
@@ -92,8 +92,19 @@ def secondary_stage(docs_dict, queries_dict, top_k_results, set_docs, K=10):
     doc_texts = [docs_dict[doc_id] for doc_id in set_docs]
     doc_ids = [doc_id for doc_id in set_docs]
     
-    doc_embeddings = model.encode(doc_texts, convert_to_tensor=True, show_progress_bar=True)
-    query_embeddings = model.encode(query_texts, convert_to_tensor=True, show_progress_bar=True)
+    if load_encodings == False:
+        doc_embeddings = model.encode(doc_texts, convert_to_tensor=True, show_progress_bar=True)
+        query_embeddings = model.encode(query_texts, convert_to_tensor=True, show_progress_bar=True)
+    else:
+        # Carregar os embeddings pré-computados
+        print("Carregando embeddings pré-computados.")
+        loaded_data_doc = torch.load("../data/embeddings/doc_embeddings.pt")
+        loaded_data_query = torch.load("../data/embeddings/query_embeddings.pt")
+        doc_embeddings = loaded_data_doc["doc_embeddings"]
+        doc_ids = loaded_data_doc["doc_ids"]
+
+        query_embeddings = loaded_data_query["query_embeddings"]
+        query_ids = loaded_data_query["query_ids"]
 
     # Dicionário para armazenar resultados
     results = {}
