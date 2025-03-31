@@ -1,4 +1,6 @@
 from transformers import BertTokenizer, BertModel
+from sentence_transformers import SentenceTransformer, util
+
 from tqdm import tqdm
 import time
 import torch
@@ -84,3 +86,51 @@ def bert(docs_dict, queries_dict, tokenizer, model, K=10, batch_size=32):
 # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # model = BertModel.from_pretrained('bert-base-uncased')
 # results, exec_time = bert(docs_dict, queries_dict, tokenizer, model, batch_size=32)
+
+
+
+
+def bert_search(docs_dict, queries_dict, K=10):
+    """
+    Realiza busca usando Sentence-BERT e similaridade de cosseno.
+
+    Args:
+        docs_dict (dict): {doc_id: texto documento}
+        queries_dict (dict): {query_id: texto query}
+        K (int): Número de documentos retornados por query
+
+    Returns:
+        dict: {query_id: [(doc_id, score), ...]}
+        float: tempo total execução (segundos)
+    """
+    start_time = time.time()
+
+    doc_ids, doc_texts = dict_to_list(docs_dict)
+    query_ids, query_texts = dict_to_list(queries_dict)
+
+    # Carregar modelo pré-treinado SBERT (rápido e eficiente)
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+    # Computar embeddings em lote (mais eficiente)
+    doc_embeddings = model.encode(doc_texts, convert_to_tensor=True)
+    query_embeddings = model.encode(query_texts, convert_to_tensor=True)
+
+    # Dicionário para armazenar resultados
+    results = {}
+
+    # Para cada query, calcular similaridade de cosseno
+    for qid, query_emb in tqdm(zip(query_ids, query_embeddings), total=len(query_ids)):
+        # Calcular similaridade entre query e todos documentos
+        cos_scores = util.cos_sim(query_emb, doc_embeddings)[0]
+
+        # Obter top K documentos mais similares
+        top_results = torch.topk(cos_scores, k=K)
+
+        results[qid] = [
+            (doc_ids[idx], float(score))
+            for score, idx in zip(top_results.values, top_results.indices)
+        ]
+
+    execution_time = time.time() - start_time
+
+    return results, execution_time
