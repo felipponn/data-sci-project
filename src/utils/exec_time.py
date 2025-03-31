@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 import time
 
@@ -14,3 +15,14 @@ def query_timing(search_function, docs_dict, queries_dict, K=10):
         query_times.append(time.time() - start_time)
 
     return query_times
+
+def plot_query_times(query_times, search_function):
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(query_times)), query_times, marker='o')
+    plt.xlabel('Query ID')
+    plt.ylabel('Execution Time (seconds)')
+    plt.title(f'Execution Time per Query for {search_function.__name__}')
+    plt.xticks(rotation=90)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
