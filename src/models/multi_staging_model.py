@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sentence_transformers import SentenceTransformer, util
+import pickle
 
 def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
@@ -91,45 +92,49 @@ def secondary_stage(docs_dict, queries_dict, top_k_results, set_docs, K=10, load
 
     doc_texts = [docs_dict[doc_id] for doc_id in set_docs]
     doc_ids = [doc_id for doc_id in set_docs]
-    
+    query_embeddings = model.encode(query_texts, convert_to_tensor=True, show_progress_bar=True)
     if load_encodings == False:
         doc_embeddings = model.encode(doc_texts, convert_to_tensor=True, show_progress_bar=True)
-        query_embeddings = model.encode(query_texts, convert_to_tensor=True, show_progress_bar=True)
     else:
         # Carregar os embeddings pré-computados
         print("Carregando embeddings pré-computados.")
-        loaded_data_doc = torch.load("../data/embeddings/doc_embeddings.pt")
-        loaded_data_query = torch.load("../data/embeddings/query_embeddings.pt")
-        doc_embeddings = loaded_data_doc["doc_embeddings"]
-        doc_ids = loaded_data_doc["doc_ids"]
-
-        query_embeddings = loaded_data_query["query_embeddings"]
-        query_ids = loaded_data_query["query_ids"]
-
-    # Dicionário para armazenar resultados
-    results = {}
-
-    # Criar um dicionário de mapeamento de ID para índice na lista de embeddings
-    doc_id_to_index = {doc_id: idx for idx, doc_id in enumerate(doc_ids)}
-
-    # Para cada query, calcular similaridade de cosseno
-    for qid, query_emb in tqdm(zip(query_ids, query_embeddings), total=len(query_ids)):
-        # Obter os índices correspondentes dos documentos relevantes
-        filtered_indices = [doc_id_to_index[doc_id] for doc_id in top_k_results[qid]]
-
-        # Filtrar os embeddings dos documentos mais relevantes
-        filtered_doc_embeddings = doc_embeddings[filtered_indices]  # Agora indexamos corretamente
+        # loaded_data_doc = "../data/embeddings/doc_embeddings.pt" with pickle
+        loaded_data_doc = pickle.load(open("../data/embeddings/doc_embeddings.pt", "rb"))
         
-        # Calcular similaridade entre query e todos documentos
+
+        doc_embeddings = loaded_data_doc["embeddings"]
+        doc_ids_loaded = loaded_data_doc["doc_ids"]
+        
+        #filtrar os indices loadded_data_doc["doc_ids"] para os ids que foram recuperados na primeira fase
+        doc_id_to_index = {doc_id: idx for idx, doc_id in enumerate(doc_ids_loaded)}
+
+    results = {}
+    for qid, query_emb in tqdm(zip(query_ids, query_embeddings), total=len(query_ids)):
+        # Get the doc_ids for the current query
+        filtered_doc_ids = top_k_results[qid]
+        
+        # Convert these doc_ids to indices using the mapping:
+        if load_encodings:
+            filtered_doc_indices = [doc_id_to_index[doc_id] for doc_id in filtered_doc_ids]
+        else:
+            # If not loading pre-computed encodings, build a mapping for the current ordering
+            local_doc_id_to_index = {doc_id: idx for idx, doc_id in enumerate(doc_ids)}
+            filtered_doc_indices = [local_doc_id_to_index[doc_id] for doc_id in filtered_doc_ids]
+        
+        # Now, use the integer indices to get the embeddings:
+        filtered_doc_embeddings = doc_embeddings[filtered_doc_indices]
+        filtered_doc_embeddings = filtered_doc_embeddings.cpu().to(query_emb.device)
+
+        # Compute cosine similarity:
         cos_scores = util.cos_sim(query_emb, filtered_doc_embeddings)[0]
 
-        # Obter top K documentos mais similares
-        top_results = torch.topk(cos_scores, k=K)
+        # Get top K results:
+        top_results = torch.topk(cos_scores, k=min(K, len(filtered_doc_indices)))
 
         results[qid] = [
-            (top_k_results[qid][idx], float(score))
+            (filtered_doc_ids[idx], float(score))
             for score, idx in zip(top_results.values, top_results.indices)
         ]
-    execution_time = time.time() - start_time
+        execution_time = time.time() - start_time
 
     return results, execution_time
