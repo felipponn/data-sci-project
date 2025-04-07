@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
 
-def save_embeddings(docs_dict):
+def save_embeddings(docs_dict, path="../data/embeddings/doc_embeddings.pt"):
     """
     Salva os embeddings dos documentos e das queries em arquivos .pt.
     Args:
@@ -30,7 +30,7 @@ def save_embeddings(docs_dict):
         'embeddings': doc_embeddings.cpu()  # keep as tensor
     }
 
-    with open("../../data/embeddings/doc_embeddings.pt", "wb") as f:
+    with open(path, "wb") as f:
         pickle.dump(data, f)
 
 
@@ -38,6 +38,7 @@ def save_embeddings(docs_dict):
 
 PATH = 'subset_msmarco_train_0.01_99.pkl'
 PATH_DATA = '../data/' + PATH
+PATH_DATA_CLEAN = '../data/data_clean/' + PATH
 if __name__ == "__main__":
     with open(PATH_DATA, 'rb') as f:
         data = pickle.load(f)
@@ -50,40 +51,20 @@ if __name__ == "__main__":
     print(docs_dict)
     print(f'Quantidade de docs: {len(docs_dict)}')
 
-    # Criando um dicionário para armazenar as relações query-documentos
-    qrels_dict = {}
-
-    # Iterando sobre os qrels para construir o dicionário
-    for qrel in data['qrels']:
-        query_id = qrel.query_id
-        doc_id = qrel.doc_id
-        
-        # Se a query já existe no dicionário, adiciona o doc à lista
-        if query_id in qrels_dict:
-            qrels_dict[query_id].append(doc_id)
-        # Se não existe, cria uma nova lista com o doc
-        else:
-            qrels_dict[query_id] = [doc_id]
-
-    print(qrels_dict)
-    print(f'Quantidade de qrels: {len(qrels_dict)}')
-
-
-    random.seed(42)
-
-    # Split the queries (assuming queries is a dictionary of {query_id: query_object})
-    query_ids = list(queries_dict.keys())  # List of query IDs
-
-    # Shuffle query IDs to ensure a random split
-    random.shuffle(query_ids)
-
-    # Split into 80% for training, 20% for validation
-    split_ratio = 0.8
-    test_query_ids = query_ids[int(len(query_ids) * split_ratio):]
-
-    test_queries_dict = {qid: queries_dict[qid] for qid in test_query_ids}
-
-    print(len(queries_dict))
-    print(len(test_queries_dict))
-
     save_embeddings(docs_dict)
+    
+    #clean case
+    with open(PATH_DATA_CLEAN, 'rb') as f:
+        data_clean = pickle.load(f)
+
+    docs_dict_clean = data_clean['docs_dict']
+    queries_dict_clean = data_clean['queries_dict']
+
+
+    print("Queries limpas:")
+    print(len(queries_dict_clean))
+    print("\nDocs limpos:")
+    print(len(docs_dict_clean))
+    
+    
+    save_embeddings(docs_dict_clean, path="../data/embeddings/doc_embeddings_clean.pt")
