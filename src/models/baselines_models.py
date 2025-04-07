@@ -21,9 +21,13 @@ def random_search(docs_dict, queries_dict, K=10):
     Returns:
         dict: dicionário com resultados no formato {qid: [(doc_id, score), ...]}
         float: tempo de execução em segundos
+        list: lista de tempos de execução para cada query
     """
     doc_ids, doc_texts = dict_to_list(docs_dict)
     query_ids, query_texts = dict_to_list(queries_dict)
+    
+    # Lista de todos os tempos de execução
+    query_times = []
 
     # Para guardar resultados
     top_k_results = {}
@@ -33,15 +37,21 @@ def random_search(docs_dict, queries_dict, K=10):
 
     # Para cada query
     for qid, qtext in tqdm(zip(query_ids, query_texts), total=len(query_ids)):
+        # Medir tempo de execução
+        s_time = time.time()
+        
         random_doc_indices = random.sample(range(len(doc_ids)), K)
         
         # Retorna doc_id e score simbólico (0.0) para cada documento
         top_docs = [(doc_ids[idx], 0.0) for idx in random_doc_indices]
         top_k_results[qid] = top_docs
+        
+        # Adiciona o tempo de execução da query
+        query_times.append(time.time() - s_time)
 
     execution_time = time.time() - start_time
     
-    return top_k_results, execution_time
+    return top_k_results, execution_time, query_times
 
 def tfidf_search(docs_dict, queries_dict, K=10):
     """
@@ -55,10 +65,14 @@ def tfidf_search(docs_dict, queries_dict, K=10):
     Returns:
         dict: {query_id: [(doc_id, score), ...]}, para cada query.
         float: tempo de execução em segundos
+        list: lista de tempos de execução para cada query
     """
     # Passo 1: Obter listas de ids e textos
     doc_ids, doc_texts = dict_to_list(docs_dict)
     query_ids, query_texts = dict_to_list(queries_dict)
+    
+    # Lista de todos os tempos de execução
+    query_times = []
 
     start_time = time.time()
 
@@ -76,6 +90,9 @@ def tfidf_search(docs_dict, queries_dict, K=10):
 
     top_k_results = {}
     for i in tqdm(range(similarity_matrix.shape[0]), total=similarity_matrix.shape[0]):
+        # Medir tempo de execução
+        s_time = time.time()
+        
         # Extraindo a i-ésima linha
         row_scores = similarity_matrix[i].toarray().ravel()
 
@@ -84,10 +101,13 @@ def tfidf_search(docs_dict, queries_dict, K=10):
 
         results = [(doc_ids[idx], row_scores[idx]) for idx in top_k_idx]
         top_k_results[query_ids[i]] = results
+        
+        # Adiciona o tempo de execução da query
+        query_times.append(time.time() - s_time)
 
     execution_time = time.time() - start_time
     
-    return top_k_results, execution_time
+    return top_k_results, execution_time, query_times
 
 
 
@@ -103,10 +123,14 @@ def bm25_search(docs_dict, queries_dict, K=10):
     Returns:
         dict: dicionário com resultados no formato {qid: [(doc_id, score), ...]}
         float: tempo de execução em segundos
+        list: lista de tempos de execução para cada query
     """
     # Passo 1: Obter listas de IDs e textos
     doc_ids, doc_texts = dict_to_list(docs_dict)
     query_ids, query_texts = dict_to_list(queries_dict)
+    
+    # Lista de todos os tempos de execução
+    query_times = []
 
     start_time = time.time()
 
@@ -121,6 +145,9 @@ def bm25_search(docs_dict, queries_dict, K=10):
 
     # Passo 4: Para cada query, calcular scores e pegar top K docs (usando seleção parcial)
     for qid, qtext in tqdm(zip(query_ids, query_texts), total=len(query_ids)):
+        # Medir tempo de execução
+        s_time = time.time()
+        
         query_tokens = qtext.split()
         
         # Obtém scores de BM25 para cada documento
@@ -135,7 +162,10 @@ def bm25_search(docs_dict, queries_dict, K=10):
         # Mapeia índices de volta aos doc_ids
         top_docs = [(doc_ids[idx], scores[idx]) for idx in idxs_top_k]
         top_k_results[qid] = top_docs
+        
+        # Adiciona o tempo de execução da query
+        query_times.append(time.time() - s_time)
 
     execution_time = time.time() - start_time
     
-    return top_k_results, execution_time
+    return top_k_results, execution_time, query_times
