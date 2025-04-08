@@ -1,5 +1,8 @@
 from transformers import AutoTokenizer, AutoModel
+from sentence_transformers import util
+
 import torch
+import time
 import numpy as np
 from tqdm import tqdm
 
@@ -7,6 +10,7 @@ def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
 
 def tevatron_search(docs_dict, queries_dict, K=10):
+    start_time = time.time()
     doc_ids, doc_texts = dict_to_list(docs_dict)
     query_ids, query_texts = dict_to_list(queries_dict)
 
@@ -27,10 +31,17 @@ def tevatron_search(docs_dict, queries_dict, K=10):
             q_outputs = query_encoder(**q_inputs)
             q_embedding = q_outputs.last_hidden_state[:, 0, :]  # CLS token
 
-            # Similaridade por produto escalar
-            scores = torch.matmul(doc_embeddings, q_embedding.squeeze().T).squeeze().numpy()
+            # Calcular similaridade entre query e todos documentos
+            cos_scores = util.cos_sim(q_embedding, doc_embeddings)[0]
 
-            top_k_idx = np.argsort(scores)[::-1][:K]
-            results[qid] = [(doc_ids[idx], scores[idx]) for idx in top_k_idx]
+            # Obter top K documentos mais similares
+            top_results = torch.topk(cos_scores, k=K)
+            results[qid] = [
+                (doc_ids[idx], float(score))
+                for score, idx in zip(top_results.values,
+                                      top_results.indices)
+            ]
 
-    return results, None  # ou adicione time se quiser medir
+    execution_time = time.time() - start_time
+
+    return results, execution_time
