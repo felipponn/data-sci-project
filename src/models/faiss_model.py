@@ -8,7 +8,7 @@ import time
 def dict_to_list(dict_data):
     return list(dict_data.keys()), list(dict_data.values())
 
-def faiss_tevatron_search(docs_dict, queries_dict, K=10):
+def faiss_search(docs_dict, queries_dict, K=10):
     """
     Realiza busca usando Tevatron + FAISS para recuperação densa eficiente.
     
@@ -21,6 +21,7 @@ def faiss_tevatron_search(docs_dict, queries_dict, K=10):
         dict: {query_id: [(doc_id, score), ...]}
         float: tempo de execução em segundos
     """
+    start_time = time.time()
     doc_ids, doc_texts = dict_to_list(docs_dict)
     query_ids, query_texts = dict_to_list(queries_dict)
 
@@ -35,8 +36,6 @@ def faiss_tevatron_search(docs_dict, queries_dict, K=10):
     doc_encoder.to(device).eval()
 
     torch.set_grad_enabled(False)
-
-    start_time = time.time()
 
     # =======================
     # 1. Embedding dos documentos
