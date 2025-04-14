@@ -247,17 +247,24 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
         query_encoder = AutoModel.from_pretrained("castorini/mdpr-question_encoder")
         doc_encoder = AutoModel.from_pretrained("castorini/mdpr-passage_encoder")
 
+        doc_texts = [docs_dict[doc_id] for doc_id in set_docs]
+        doc_ids = [doc_id for doc_id in set_docs]
+
         if load_encodings == False:
             # Encode docs
             with torch.no_grad():
                 doc_inputs = tokenizer(doc_texts,padding=True, truncation=True, return_tensors='pt')
                 doc_outputs = doc_encoder(**doc_inputs)
                 doc_embeddings = doc_outputs.last_hidden_state[:, 0, :]  # CLS token
+
+                query_inputs = tokenizer(query_texts, return_tensors='pt', truncation=True, padding=True)
+                query_outputs = query_encoder(**query_inputs)
+                query_embeddings = query_outputs.last_hidden_state[:, 0, :]  # CLS token
         else:
             # Carregar os embeddings pré-computados
             print("Carregando embeddings pré-computados.")
-            loaded_data_doc = torch.load("../data/embeddings/doc_embeddings.pt")
-            loaded_data_query = torch.load("../data/embeddings/query_embeddings.pt")
+            loaded_data_doc = torch.load("../data/embeddings/tevatron_doc_embeddings.pt")
+            loaded_data_query = torch.load("../data/embeddings/tevatron_query_embeddings.pt")
             doc_embeddings = loaded_data_doc["doc_embeddings"]
             doc_ids = loaded_data_doc["doc_ids"]
 
@@ -265,22 +272,26 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
             query_ids = loaded_data_query["query_ids"]
 
         results = {}
-        for qid, qtext in tqdm(zip(query_ids, query_texts), total=len(query_ids)):
-            with torch.no_grad():
-                q_inputs = tokenizer(qtext, return_tensors='pt', truncation=True, padding=True)
-                q_outputs = query_encoder(**q_inputs)
-                q_embedding = q_outputs.last_hidden_state[:, 0, :]  # CLS token
 
-                # Calcular similaridade entre query e todos documentos
-                cos_scores = util.cos_sim(q_embedding, doc_embeddings)[0]
+        doc_id_to_index = {doc_id: idx for idx, doc_id in enumerate(doc_ids)}
+        
+        for qid, qtext in tqdm(zip(query_ids, query_embeddings), total=len(query_ids)):
+            # Obter os índices correspondentes dos documentos relevantes
+            filtered_indices = [doc_id_to_index[doc_id] for doc_id in top_k_results[qid]]
 
-                # Obter top K documentos mais similares
-                top_results = torch.topk(cos_scores, k=K)
-                results[qid] = [
-                    (doc_ids[idx], float(score))
-                    for score, idx in zip(top_results.values,
-                                        top_results.indices)
-                ]
+            # Filtrar os embeddings dos documentos mais relevantes
+            filtered_doc_embeddings = doc_embeddings[filtered_indices]  # Agora indexamos corretamente
+
+            # Calcular similaridade entre query e todos documentos
+            cos_scores = util.cos_sim(qtext, filtered_doc_embeddings)[0]
+
+            # Obter top K documentos mais similares
+            top_results = torch.topk(cos_scores, k=K)
+
+            results[qid] = [
+                (top_k_results[qid][idx], float(score))
+                for score, idx in zip(top_results.values, top_results.indices)
+            ]
     
     elif model == 'faiss':
         tokenizer_q = AutoTokenizer.from_pretrained("castorini/mdpr-question_encoder")
@@ -338,8 +349,8 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
         else:
             # Carregar os embeddings pré-computados
             print("Carregando embeddings pré-computados.")
-            loaded_data_doc = torch.load("../data/embeddings/doc_embeddings.pt")
-            loaded_data_query = torch.load("../data/embeddings/query_embeddings.pt")
+            loaded_data_doc = torch.load("../data/embeddings/bert_doc_embeddings.pt")
+            loaded_data_query = torch.load("../data/embeddings/bert_query_embeddings.pt")
             doc_embeddings = loaded_data_doc["doc_embeddings"]
             doc_ids = loaded_data_doc["doc_ids"]
 
@@ -370,6 +381,7 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
                 (top_k_results[qid][idx], float(score))
                 for score, idx in zip(top_results.values, top_results.indices)
             ]
+    
     execution_time = time.time() - start_time
 
     return results, execution_time
