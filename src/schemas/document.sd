@@ -1,0 +1,36 @@
+schema document {
+    document document {
+        field id type string {
+            indexing: summary | attribute
+        }
+
+        field text type string {
+            indexing: index | summary
+        }
+
+        field embedding type tensor<float>(d[384]) {
+            indexing: attribute | summary
+            attribute {
+                distance-metric: dotproduct
+            }
+        }
+    }
+
+    rank-profile bm25 inherits default {
+        first-phase {
+            expression: nativeRank(text)
+        }
+    }
+
+    rank-profile dot_product inherits default {
+        first-phase {
+            expression: closeness(embedding)
+        }
+    }
+
+    rank-profile hybrid inherits default {
+        first-phase {
+            expression: nativeRank(text) + closeness(embedding)
+        }
+    }
+}

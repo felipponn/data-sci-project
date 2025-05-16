@@ -1,0 +1,19 @@
+<services version="1.0">
+  <container id="vespasearch1_content" version="1.0">
+    <document-api />
+    <search />
+    <http>
+      <server id="default" port="8080" />
+    </http>
+  </container>
+
+  <content id="vespasearch1_content" version="1.0">
+    <redundancy>1</redundancy>
+    <documents>
+      <document type="document" mode="index" />
+    </documents>
+    <nodes>
+      <node hostalias="node1" />
+    </nodes>
+  </content>
+</services>
