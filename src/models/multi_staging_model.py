@@ -248,9 +248,9 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
     query_ids, query_texts = dict_to_list(queries_dict)
 
     if model == 'tevatron':
-        tokenizer = AutoTokenizer.from_pretrained("castorini/mdpr-question_encoder")
-        query_encoder = AutoModel.from_pretrained("castorini/mdpr-question_encoder")
-        doc_encoder = AutoModel.from_pretrained("castorini/mdpr-passage_encoder")
+        tokenizer = AutoTokenizer.from_pretrained("castorini/mdpr-question-nq")
+        query_encoder = AutoModel.from_pretrained("castorini/mdpr-question-nq")
+        doc_encoder = AutoModel.from_pretrained("castorini/mdpr-passage-nq")
 
         doc_texts = [docs_dict[doc_id] for doc_id in set_docs]
         doc_ids = [doc_id for doc_id in set_docs]
@@ -299,11 +299,11 @@ def secondary_stage_choose(docs_dict, queries_dict, top_k_results, set_docs, K=1
             ]
     
     elif model == 'faiss':
-        tokenizer_q = AutoTokenizer.from_pretrained("castorini/mdpr-question_encoder")
-        tokenizer_d = AutoTokenizer.from_pretrained("castorini/mdpr-passage_encoder")
+        tokenizer_q = AutoTokenizer.from_pretrained("castorini/mdpr-question-nq")
+        tokenizer_d = AutoTokenizer.from_pretrained("castorini/mdpr-passage-nq")
         
-        query_encoder = AutoModel.from_pretrained("castorini/mdpr-question_encoder")
-        doc_encoder = AutoModel.from_pretrained("castorini/mdpr-passage_encoder")
+        query_encoder = AutoModel.from_pretrained("castorini/mdpr-question-nq")
+        doc_encoder = AutoModel.from_pretrained("castorini/mdpr-passage-nq")
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         query_encoder.to(device).eval()
