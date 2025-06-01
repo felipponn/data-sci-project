@@ -36,22 +36,38 @@ schema doc {
                 bm25text
             }
         }
+        match-features {
+            bm25text
+        }
     }
-    rank-profile semantic {
+    rank-profile dot_product {
         inputs {
             query(q) tensor<float>(x[384])         }
-        first-phase {
+        function cos_sim() {
             expression {
                 closeness(field, embedding)
             }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        match-features {
+            cos_sim
         }
     }
     rank-profile fusion inherits bm25 {
         inputs {
             query(q) tensor<float>(x[384])         }
-        first-phase {
+        function cos_sim() {
             expression {
                 closeness(field, embedding)
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
             }
         }
         global-phase {
@@ -60,19 +76,9 @@ schema doc {
             }
             rerank-count: 1000
         }
-    }
-    rank-profile dot_product {
-        inputs {
-            query(q) tensor<float>(x[384])         }
-        function closeness() {
-            expression {
-                dot_product(field, embedding)
-            }
-        }
-        first-phase {
-            expression {
-                closeness(field, embedding)
-            }
+        match-features {
+            cos_sim
+            bm25text
         }
     }
 }
