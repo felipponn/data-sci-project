@@ -1,0 +1,84 @@
+schema doc {
+    document doc {
+        field id type string {
+            indexing: summary
+        }
+        field text type string {
+            indexing: index | summary
+            index: enable-bm25
+        }
+    }
+    field embedding type tensor<float>(x[384]) {
+        indexing: input text | embed | index | attribute
+        attribute {
+            distance-metric: angular
+        }
+        index {
+            hnsw {
+                max-links-per-node: 16
+                neighbors-to-explore-at-insert: 200
+            }
+        }
+    }
+    fieldset default {
+        fields: text
+    }
+    rank-profile bm25 {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function bm25text() {
+            expression {
+                bm25(text)
+            }
+        }
+        first-phase {
+            expression {
+                bm25text
+            }
+        }
+        match-features {
+            bm25text
+        }
+    }
+    rank-profile dot_product {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        match-features {
+            cos_sim
+        }
+    }
+    rank-profile fusion inherits bm25 {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        global-phase {
+            expression {
+                reciprocal_rank_fusion(bm25text, closeness(field, embedding))
+            }
+            rerank-count: 1000
+        }
+        match-features {
+            cos_sim
+            bm25text
+        }
+    }
+}
