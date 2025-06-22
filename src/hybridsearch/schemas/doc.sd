@@ -10,7 +10,7 @@ schema doc {
         }
     }
     field embedding type tensor<float>(x[384]) {
-        indexing: input text | embed mini | index | attribute
+        indexing: input text | embed e5 | index | attribute
         attribute {
             distance-metric: angular
         }
@@ -140,9 +140,9 @@ schema doc {
             max_sim
         }
     }
-    rank-profile dot_product_cross_encoder {
+    rank-profile dot_product_cross_encoder inherits dot_product {
         inputs {
-            query(q) tensor<float>(x[384])             query(qt) tensor<float>(qt{}, x[128])             query(query_token_ids) tensor<float>(d0[32])         }
+            query(q) tensor<float>(x[384])             query(query_token_ids) tensor<float>(d0[32])         }
         function cos_sim() {
             expression {
                 closeness(field, embedding)

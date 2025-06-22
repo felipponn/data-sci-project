@@ -4,9 +4,9 @@
         <search></search>
         <document-api></document-api>
         <document-processing></document-processing>
-        <component id="mini" type="hugging-face-embedder">
-            <transformer-model url="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"/>
-            <tokenizer-model url="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/raw/main/tokenizer.json"/>
+        <component id="e5" type="hugging-face-embedder">
+            <transformer-model url="https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx"/>
+            <tokenizer-model url="https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json"/>
         </component>
         <component id="colbert" type="colbert-embedder">
             <transformer-model url="https://huggingface.co/colbert-ir/colbertv2.0/resolve/main/model.onnx"/>
