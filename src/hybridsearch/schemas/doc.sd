@@ -1,0 +1,187 @@
+schema doc {
+    document doc {
+        field id type string {
+            indexing: summary
+        }
+        field text type string {
+            indexing: index | summary
+            index: enable-bm25
+            bolding: on
+        }
+    }
+    field embedding type tensor<float>(x[384]) {
+        indexing: input text | embed e5 | index | attribute
+        attribute {
+            distance-metric: angular
+        }
+        index {
+            hnsw {
+                max-links-per-node: 16
+                neighbors-to-explore-at-insert: 200
+            }
+        }
+    }
+    field colbert_embedding type tensor<int8>(dt{}, x[16]) {
+        indexing: input text | embed colbert | attribute
+        attribute {
+            paged
+        }
+    }
+    field text_tokens_ids type tensor<float>(d0[64]) {
+        indexing: input text | embed tokenizer | attribute
+        attribute {
+            paged
+        }
+    }
+    fieldset default {
+        fields: text
+    }
+    onnx-model ranker {
+        file: files/ranker.onnx
+        input input_ids: input_ids
+        input attention_mask: attention_mask
+        input token_type_ids: token_type_ids
+        output logits: logits
+    }
+    rank-profile bm25 {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function bm25text() {
+            expression {
+                bm25(text)
+            }
+        }
+        first-phase {
+            expression {
+                bm25text
+            }
+        }
+        match-features {
+            bm25text
+        }
+    }
+    rank-profile dot_product {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        match-features {
+            cos_sim
+        }
+    }
+    rank-profile fusion inherits bm25 {
+        inputs {
+            query(q) tensor<float>(x[384])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        global-phase {
+            expression {
+                reciprocal_rank_fusion(bm25text, closeness(field, embedding))
+            }
+            rerank-count: 1000
+        }
+        match-features {
+            cos_sim
+            bm25text
+        }
+    }
+    rank-profile dot_product_colbert inherits dot_product {
+        inputs {
+            query(q) tensor<float>(x[384])             query(qt) tensor<float>(qt{}, x[128])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        function max_sim() {
+            expression {
+                
+                                                sum(
+                                                    reduce(
+                                                        sum(
+                                                            query(qt) * unpack_bits(attribute(colbert_embedding)), x
+                                                        ),
+                                                        max, dt
+                                                    ),
+                                                    qt
+                                                )
+                                                
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        second-phase {
+            expression {
+                max_sim
+            }
+            rerank-count: 100
+        }
+        match-features {
+            cos_sim
+            max_sim
+        }
+    }
+    rank-profile dot_product_cross_encoder inherits dot_product {
+        inputs {
+            query(q) tensor<float>(x[384])             query(query_token_ids) tensor<float>(d0[32])         }
+        function cos_sim() {
+            expression {
+                closeness(field, embedding)
+            }
+        }
+        function input_ids() {
+            expression {
+                tokenInputIds(96, query(query_token_ids), attribute(text_tokens_ids))
+            }
+        }
+        function token_type_ids() {
+            expression {
+                tokenTypeIds(96, query(query_token_ids), attribute(text_tokens_ids))
+            }
+        }
+        function attention_mask() {
+            expression {
+                tokenAttentionMask(96, query(query_token_ids), attribute(text_tokens_ids))
+            }
+        }
+        function cross_encoder() {
+            expression {
+                onnx(ranker){d0:0,d1:0}
+            }
+        }
+        first-phase {
+            expression {
+                cos_sim
+            }
+        }
+        second-phase {
+            expression {
+                cross_encoder
+            }
+            rerank-count: 100
+        }
+        match-features {
+            cos_sim
+            cross_encoder
+        }
+    }
+}

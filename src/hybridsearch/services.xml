@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services version="1.0">
+    <container id="hybridsearch_container" version="1.0">
+        <search></search>
+        <document-api></document-api>
+        <document-processing></document-processing>
+        <component id="e5" type="hugging-face-embedder">
+            <transformer-model url="https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx"/>
+            <tokenizer-model url="https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json"/>
+        </component>
+        <component id="colbert" type="colbert-embedder">
+            <transformer-model url="https://huggingface.co/colbert-ir/colbertv2.0/resolve/main/model.onnx"/>
+            <tokenizer-model url="https://huggingface.co/colbert-ir/colbertv2.0/raw/main/tokenizer.json"/>
+        </component>
+        <component id="tokenizer" type="hugging-face-tokenizer">
+            <model url="https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2/raw/main/tokenizer.json"/>
+        </component>
+    </container>
+    <content id="hybridsearch_content" version="1.0">
+        <redundancy>1</redundancy>
+        <documents>
+            <document type="doc" mode="index"></document>
+        </documents>
+        <nodes>
+            <node distribution-key="0" hostalias="node1"></node>
+        </nodes>
+    </content>
+</services>
